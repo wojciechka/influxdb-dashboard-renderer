@@ -1,0 +1,6 @@
+requests
+matplotlib
+pillow
+influxdb-client
+pytz
+tzlocal
