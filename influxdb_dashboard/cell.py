@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 from influxdb_dashboard.graph import InfluxDBDashboardGraphOutput
+from influxdb_dashboard.gauge import InfluxDBDashboardGaugeOutput
 from influxdb_dashboard.single_stat import InfluxDBDashboardSingleStatOutput
 from tzlocal import get_localzone
 import pytz
@@ -15,6 +16,8 @@ class InfluxDBDashboardCellOutput:
     canvas = output.draw_canvas(cols=self.cell.w, rows=self.cell.h)
     if self.cell.type == 'xy':
       InfluxDBDashboardGraphOutput(self).draw(canvas, output)
+    if self.cell.type == 'gauge':
+      InfluxDBDashboardGaugeOutput(self).draw(canvas, output)
     elif self.cell.type == 'single-stat':
       if self.cell.name != '':
         title_height = int(round(18 * output.dpi / 100))
@@ -30,10 +33,10 @@ class InfluxDBDashboardCellOutput:
     return canvas
 
   def to_string(self, value, row=None):
-    if row != None:
-      if type(value).__name__ == 'float':
-        n_digits = self.cell.decimal_places if self.cell.decimal_places != None else self.round_digits(value)
-        return '%g' % (round(value, n_digits))
+    if type(value).__name__ == 'float':
+      n_digits = self.cell.decimal_places if self.cell.decimal_places != None else self.round_digits(value)
+      return '%g' % (round(value, n_digits))
+    elif row != None:
       if type(value).__name__ == 'datetime' and row.values.get('__dateformat', None) != None:
         if row.values.get('__localtz', False) == True:
           value = value.astimezone(get_localzone())
@@ -46,7 +49,7 @@ class InfluxDBDashboardCellOutput:
     return max(0, round(2 - diffLog10))
 
   def to_text_color(self, output, value=None, in_graph=False):
-    colors = self.cell.text_colors
+    colors = self.cell.color_map['text']
     if output.mode == 'bw':
       if output.dark:
         color = (255, 255, 255)
@@ -61,7 +64,7 @@ class InfluxDBDashboardCellOutput:
     return self.return_color(color, in_graph)
 
   def to_scale_color(self, output, index, total, fill=False, in_graph=False):
-    colors = self.cell.scale_colors
+    colors = self.cell.color_map['scale']
     if output.mode == 'bw':
       if output.dark:
         color = (255, 255, 255)
@@ -95,6 +98,20 @@ class InfluxDBDashboardCellOutput:
         color = list(color) + [alpha]
 
     return self.return_color(color, in_graph)
+
+  def to_gauge_color(self, output, value, in_graph=False):
+    if output.mode == 'bw':
+      if output.dark:
+        color = (255, 255, 255)
+      else:
+        color = (0, 0, 0)
+    else:
+      color = self.cell.colors[0]['color']
+      for col in self.cell.colors[1:-1]:
+        if value >= col['value']:
+          color = col['color']
+    return self.return_color(color, in_graph)
+
 
   def return_color(self, color, in_graph):
     if in_graph:
