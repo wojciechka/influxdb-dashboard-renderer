@@ -14,23 +14,33 @@ class InfluxDBDashboardCellOutput:
 
   def draw(self, output):
     canvas = output.draw_canvas(cols=self.cell.w, rows=self.cell.h)
-    if self.cell.type == 'xy':
-      InfluxDBDashboardGraphOutput(self).draw(canvas, output)
-    if self.cell.type == 'gauge':
-      InfluxDBDashboardGaugeOutput(self).draw(canvas, output)
-    elif self.cell.type == 'single-stat':
-      if self.cell.name != '':
-        title_height = int(round(18 * output.dpi / 100))
-        InfluxDBDashboardSingleStatOutput(self).draw(
-          canvas, output, box=(canvas.size[0], title_height),
-          text=self.cell.name, foreground_color=output.foreground_color())
-        InfluxDBDashboardSingleStatOutput(self).draw(canvas, output, box_offset=(0, title_height))
-      else:
-        InfluxDBDashboardSingleStatOutput(self).draw(canvas, output)
-    if self.cell.type == 'line-plus-single-stat':
-      InfluxDBDashboardGraphOutput(self).draw(canvas, output, has_stat=True)
-      InfluxDBDashboardSingleStatOutput(self).draw(canvas, output, max_size=0.6, border=True)
+
+    for item_to_draw in self.items_to_draw(canvas, output):
+      item_to_draw.draw()
     return canvas
+
+  def items_to_draw(self, canvas, output):
+    items_to_draw = []
+    if self.cell.type == 'xy':
+      items_to_draw.append(
+        InfluxDBDashboardGraphOutput(cell=self, canvas=canvas, output=output)
+      )
+    if self.cell.type == 'gauge':
+      items_to_draw.append(
+        InfluxDBDashboardGaugeOutput(cell=self, canvas=canvas, output=output)
+      )
+    elif self.cell.type == 'single-stat':
+      items_to_draw.append(
+        InfluxDBDashboardSingleStatOutput(cell=self, canvas=canvas, output=output)
+      )
+    if self.cell.type == 'line-plus-single-stat':
+      items_to_draw.append(
+        InfluxDBDashboardGraphOutput(cell=self, canvas=canvas, output=output)
+      )
+      items_to_draw.append(
+        InfluxDBDashboardSingleStatOutput(cell=self, canvas=canvas, output=output, max_size=0.6, border=True)
+      )
+    return items_to_draw
 
   def to_string(self, value, row=None):
     if type(value).__name__ == 'float':

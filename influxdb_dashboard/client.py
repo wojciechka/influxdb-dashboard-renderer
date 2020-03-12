@@ -4,9 +4,6 @@ from influxdb_client import InfluxDBClient, CellsService, DashboardsService, Dia
 from influxdb_client.client.flux_csv_parser import FluxCsvParser, FluxSerializationMode
 from influxdb_dashboard.cell import InfluxDBDashboardCellOutput
 
-# TODO: remove
-import json
-
 # TODO: open a PR against https://github.com/influxdata/influxdb-client-python/ to expose dashboards API
 # TODO: open a PR against https://github.com/influxdata/influxdb-client-python/ to allow passing extern
 

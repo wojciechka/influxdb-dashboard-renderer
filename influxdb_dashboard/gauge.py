@@ -1,38 +1,54 @@
 import matplotlib.pyplot as plt
-from matplotlib.patches import Circle, Wedge, Polygon
-import matplotlib
+from matplotlib import patches
 import math
 
-from PIL import Image, ImageDraw, ImageFont
-from io import BytesIO
+from influxdb_dashboard.matplotlib_output import InfluxDBDashboardMatplotlibOutput
 
-class InfluxDBDashboardGaugeOutput:
-  def __init__(self, cell):
-    self.cell = cell
-
-  def draw(self, canvas, output, has_stat=False):
+class InfluxDBDashboardGaugeOutput(InfluxDBDashboardMatplotlibOutput):
+  def draw_figure(self, canvas, output):
     self.init_degrees()
-
-    background_color = output.background_color()
-    foreground_color = output.foreground_color()
-
-    figdim = [canvas.size[0] / output.dpi, canvas.size[1] / output.dpi]
-    minfigdim = min(*figdim)
-    base_width = minfigdim * 0.25
+    # TODO: move to helper
+    minfigdim = min(*canvas.size)
+    figsize = (minfigdim, minfigdim)
+    self.base_width = minfigdim * 0.25 / output.dpi
 
     figsize = (minfigdim, minfigdim)
+    self.init_figure_and_axes(figsize=figsize, show_axes=False)
 
-    fig = plt.figure(figsize=figsize, dpi=output.dpi, facecolor=background_color, edgecolor=background_color)
-    ax = self.init_axes(fig, background_color, foreground_color)
+    # draw all value ranges
+    self.draw_ranges(output)
 
+    # draw lines for 5 values and add labels next to tken
+
+    # show current value if specified
+    if len(self.cell.tables) > 0 and len(self.cell.tables[-1].records) > 0:
+      row = self.cell.tables[-1].records[-1]
+      value = row[self.cell.cell.y_column]
+      self.draw_value_text(output, value, row)
+      self.draw_value_indicator(output, value)
+
+  def draw_ranges(self, output):
+    # TODO: draw as transition when 2 colors specified
     for i in range(0, len(self.value_range) - 1):
       val0 = self.value_range[i + 0]
       val1 = self.value_range[i + 1]
       color = self.cell.to_gauge_color(output, val0, in_graph=True)
-      ax.add_patch(Wedge((0.5, 0.4), 0.44, *self.fig_value_angles(val0, val1), facecolor=color, edgecolor=background_color, lw=base_width))
-    ax.add_patch(Circle((0.5, 0.4), 0.36, facecolor=background_color))
+      self.ax.add_patch(
+        patches.Wedge(
+          (0.5, 0.4), 0.44, *self.fig_value_angles(val0, val1),
+          facecolor=color, edgecolor=self.background_color,
+          lw=self.base_width
+        )
+      )
 
-    # draw 5 values
+    self.ax.add_patch(
+      patches.Circle(
+        (0.5, 0.4), 0.36,
+        facecolor=self.background_color
+      )
+    )
+
+  def draw_value_labels(self, output):
     for degree in range(0, 271, 54):
       value = self.value(degree)
       value_text = self.cell.to_string(value)
@@ -40,42 +56,55 @@ class InfluxDBDashboardGaugeOutput:
         self.angle_coords(degree, 0.44),
         self.angle_coords(degree, 0.45)
       ]
-      ax.add_patch(Polygon(polygon_coords, color=foreground_color, lw=base_width))
-      ax.text(
+      self.ax.add_patch(
+        patches.Polygon(
+          polygon_coords, color=self.foreground_color, lw=self.base_width
+        )
+      )
+      self.ax.text(
         *self.angle_coords(degree, 0.475),
         value_text,
         horizontalalignment='center', verticalalignment='center',
-        fontsize=round(base_width * 5), fontweight='bold', color=foreground_color
+        fontsize=round(self.base_width * 5), fontweight='bold', color=self.foreground_color
       )
 
-    if len(self.cell.tables) > 0:
-      if len(self.cell.tables[-1].records) > 0:
-        row = self.cell.tables[-1].records[-1]
-        value = row[self.cell.cell.y_column]
-        value_text = self.cell.to_string(value, row=row)
+  def draw_value_indicator(self, output, value):
+    value_degree = self.degree(value)
+    if value_degree < 0.0:
+      value_degree = 0.0
+    elif value_degree > 280.0:
+      value_degree = 280.0
 
-        ax.text(
-          0.5, 0.1,
-          value_text,
-          horizontalalignment='center', verticalalignment='center',
-          fontsize=round(base_width * 25), fontweight='bold', color=foreground_color
-        )
+    polygon_coords = [
+      self.angle_coords(value_degree - 90, 0.022),
+      self.angle_coords(value_degree + 90, 0.022),
+      self.angle_coords(value_degree, 0.4)
+    ]
+    self.ax.add_patch(
+      patches.Polygon(
+        polygon_coords,
+        facecolor=self.foreground_color, edgecolor=self.background_color, lw=self.base_width
+      )
+    )
+    self.ax.add_patch(
+      patches.Circle(
+        (0.5, 0.4), 0.02,
+        facecolor=self.foreground_color
+      )
+    )
+    
+  def draw_value_text(self, output, value, row):
+    value_text = self.cell.to_string(value, row=row)
 
-        value_degree = self.degree(value)
-        if value_degree < 0.0:
-          value_degree = 0.0
-        elif value_degree > 180.0:
-          value_degree = 180.0
+    self.ax.text(
+      0.5, 0.1,
+      value_text,
+      horizontalalignment='center', verticalalignment='center',
+      fontsize=round(self.base_width * 25), fontweight='bold', color=self.foreground_color
+    )
 
-        polygon_coords = [
-          self.angle_coords(value_degree - 90, 0.022),
-          self.angle_coords(value_degree + 90, 0.022),
-          self.angle_coords(value_degree, 0.4)
-        ]
-        ax.add_patch(Polygon(polygon_coords, facecolor=foreground_color, edgecolor=background_color, lw=base_width))
-        ax.add_patch(Circle((0.5, 0.4), 0.02, facecolor=foreground_color))
 
-    self.paste_figure(canvas, fig, background_color)
+  # helper methods for coordinates
 
   def angle_coords(self, angle, size, basex=0.5, basey=0.4):
     ra = math.radians(-135 + angle)
@@ -101,22 +130,3 @@ class InfluxDBDashboardGaugeOutput:
 
   def degree(self, value):
     return(0 + 270 * (value - self.value_base) / self.value_diff)
-
-  def paste_figure(self, canvas, fig, background_color):
-    bytes = BytesIO()
-    fig.savefig(fname=bytes, format='png', facecolor=background_color, edgecolor=background_color)
-    bytes.seek(0)
-    with Image.open(bytes) as img:
-      offset = (
-        round((canvas.size[0] - img.size[0]) / 2),
-        round((canvas.size[1] - img.size[1]) / 2)
-      )
-      canvas.paste(img, box=offset)
-      img.close()
-
-  def init_axes(self, fig, background_color, foreground_color):
-    ax = fig.gca(facecolor=background_color)
-    ax.title.set_color(foreground_color)
-    ax.set_title(self.cell.cell.name)
-    ax.set_axis_off()
-    return ax

@@ -1,37 +1,38 @@
 from PIL import Image, ImageDraw, ImageFont
-from influxdb_dashboard.text import InfluxDBDashboardTextBase
+from influxdb_dashboard.text import draw_text_on_canvas
 import math
 
-class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardTextBase):
-  def __init__(self, cell):
-    self.cell = cell
+from influxdb_dashboard.output import InfluxDBDashboardBaseOutput
 
-  def draw(self, canvas, output, text=None, box_offset=(0, 0), box=None, max_size=0.95, foreground_color=None, border=False):
-    draw = ImageDraw.Draw(canvas)
+class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardBaseOutput):
+  def __init__(self, border=False, max_size=0.9, **kwargs):
+    self.border = border
+    self.max_size = max_size
+    super().__init__(**kwargs)
 
+  def draw_figure(self, canvas, output, text=None, box_offset=(0, 0), box=None):
     if text == None or foreground_color == None:
-      row = self.cell.tables[-1].records[-1]
-      value = row[self.cell.cell.y_column]
+      if len(self.cell.tables) > 0 and len(self.cell.tables[-1].records) > 0:
+        row = self.cell.tables[-1].records[-1]
+        value = row[self.cell.cell.y_column]
+      else:
+        value = ""
+        row = None
 
     if text == None:
       text = self.cell.to_string(value, row=row)
 
+    border_width = 1
+
+    foreground_color = self.cell.to_text_color(output, value=value)
+
     box = box if box != None else (canvas.size[0] - box_offset[0], canvas.size[1] - box_offset[1])
 
-    font_name = 'arialnb.ttf'
-    (font_size, offset) = self.font_size_and_offset(font_name, box, text, max_size)
-    offset = (offset[0] + box_offset[0], offset[1] + box_offset[1])
-
-    font = ImageFont.truetype(font_name, font_size)
-    background_color = output.background_color()
-    foreground_color = foreground_color if foreground_color != None else self.cell.to_text_color(output, value=value)
-
-    if border:
-      border_width = math.floor(min(math.floor(min(*canvas.size) * 0.02), font_size * 0.02))
-      # manual border drawing is workaround for black and white images and stroke issue with draw.text
-      draw.text((offset[0] - border_width, offset[1] - border_width), text, font=font, fill=background_color)
-      draw.text((offset[0] + border_width, offset[1] - border_width), text, font=font, fill=background_color)
-      draw.text((offset[0] - border_width, offset[1] + border_width), text, font=font, fill=background_color)
-      draw.text((offset[0] + border_width, offset[1] + border_width), text, font=font, fill=background_color)
-
-    draw.text(offset, text, font=font, fill=foreground_color)
+    draw_text_on_canvas(
+      canvas, output.font_name, box, text,
+      foreground_color,
+      border_color=self.background_color,
+      border_width=border_width,
+      max_size=self.max_size,
+      offset=box_offset
+    )
