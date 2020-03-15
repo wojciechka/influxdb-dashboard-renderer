@@ -13,11 +13,21 @@ class InfluxDBDashboardBaseOutput:
     self.foreground_color = self.output.foreground_color()
     self.draw_figure(self.canvas, self.output)
 
+  def latest_row_and_value(self):
+    if len(self.cell.tables) > 0 and len(self.cell.tables[-1].records) > 0:
+      row = self.cell.tables[-1].records[-1]
+      value = row[self.cell.cell.y_column]
+      return (row, value)
+    else:
+      return [None, None]
+
+
+
 class InfluxDBDashboardOutput:
   def __init__(self, width=1920, height=1080, cols=12, rows=8, dpi=100, mode='color', dark=True, font_name='arialnb.ttf', show_titles=True):
     self.x = self.axis_data(width, cols, dpi)
     self.y = self.axis_data(height, rows, dpi)
-    self.title_height = title_height = int(round(20 * dpi / 100)) if show_titles else 0
+    self.title_height = title_height = int(round(22 * dpi / 100)) if show_titles else 0
     self.font_name = font_name
     self.dpi = dpi
     self.mode = mode
@@ -41,7 +51,7 @@ class InfluxDBDashboardOutput:
         canvas, self.font_name, size, cell.name,
         self.foreground_color(),
         offset=box,
-        max_size=0.8
+        max_size=0.9
       )
 
 
@@ -51,6 +61,9 @@ class InfluxDBDashboardOutput:
       temp = Image.eval(canvas, lambda a: [0, 128, 255][round(2 * a / 255.0)])
       canvas = Image.new('1', temp.size)
       canvas.paste(temp)
+    elif self.mode == 'bw4':
+      # draw image in 4 colors
+      canvas = Image.eval(canvas, lambda a: [0, 85, 170, 255][round(3 * a / 255.0)])
     return canvas
 
   def axis_data(self, size, items, dpi):
@@ -74,6 +87,8 @@ class InfluxDBDashboardOutput:
     elif self.mode == 'greyscale':
       image_mode = 'L'
     elif self.mode == 'bw':
+      image_mode = 'L'
+    elif self.mode == 'bw4':
       image_mode = 'L'
     else:
       raise Exception('Unknown output mode: %s' % (self.mode))

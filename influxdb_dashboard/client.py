@@ -90,6 +90,8 @@ class InfluxDBDashboardCell:
     self.yh = self.y + self.h
     self.info = self.cs.get_dashboards_id_cells_id_view(self.dashboard_id, self.id)
     self.type = self.info.properties.get('type', 'xy')
+    self.value_prefix = self.info.properties.get('prefix', '')
+    self.value_suffix = self.info.properties.get('suffix', '')
     self.name = self.info.name
 
   def init_queries(self):

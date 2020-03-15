@@ -6,13 +6,23 @@ The first goal of the project is to render dashboards that only use a subset of 
 
 The longer term goal is to mimic most views and specifics of InfluxDB 2.0 dashboards to also allow rendering more complex dashboards.
 
+# Example dashboard
+
+Below is an example rendering of a dashboard:
+
+![Example output dashboard](docs/example-dashboard.png)
+
+Along with a screenshot of InfluxDB dashboard for comparsison:
+
+![Example original dashboard](docs/example-dashboard-infludb.png)
+
 # What is currently working
 
 - Basic Flux queries
 - Queries that require `v.timeRangeStart`, `v.timeRangeStop` and `v.windowPeriod`
-- graph cells
-- single stat cells
-- graph + single stat cells
+- Graph cells
+- Single stat cells
+- Graph + single stat cells (with minor caveats regarding centering of single stat relative to graph)
 - gauge cells (currently only partially rendering correct content)
 
 Minimal code to get started:

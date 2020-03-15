@@ -13,33 +13,47 @@ class InfluxDBDashboardGaugeOutput(InfluxDBDashboardMatplotlibOutput):
     self.base_width = minfigdim * 0.25 / output.dpi
 
     figsize = (minfigdim, minfigdim)
-    self.init_figure_and_axes(figsize=figsize, show_axes=False)
+    self.init_figure_and_axes(figsize=figsize, show_axes=False, constrained_layout=False)
+
+    # draw lines for 6 values and add labels next to tken
+    self.draw_value_labels(output)
 
     # draw all value ranges
     self.draw_ranges(output)
 
-    # draw lines for 5 values and add labels next to tken
-
     # show current value if specified
-    if len(self.cell.tables) > 0 and len(self.cell.tables[-1].records) > 0:
-      row = self.cell.tables[-1].records[-1]
-      value = row[self.cell.cell.y_column]
+    (row, value) = self.latest_row_and_value()
+    if value != None:
       self.draw_value_text(output, value, row)
       self.draw_value_indicator(output, value)
 
   def draw_ranges(self, output):
-    # TODO: draw as transition when 2 colors specified
-    for i in range(0, len(self.value_range) - 1):
-      val0 = self.value_range[i + 0]
-      val1 = self.value_range[i + 1]
-      color = self.cell.to_gauge_color(output, val0, in_graph=True)
-      self.ax.add_patch(
-        patches.Wedge(
-          (0.5, 0.4), 0.44, *self.fig_value_angles(val0, val1),
-          facecolor=color, edgecolor=self.background_color,
-          lw=self.base_width
+    if len(self.cell.cell.colors) == 2:
+      steps = 90
+      step_diff = self.value_diff / steps
+      for i in range(0, steps):
+        val0 = self.value_base + i * step_diff
+        val1 = val0 + step_diff
+        color = self.cell.to_gauge_color(output, (val0 + val1) / 2.0, in_graph=True)
+        self.ax.add_patch(
+          patches.Wedge(
+            (0.5, 0.4), 0.44, *self.fig_value_angles(val0, val1),
+            color=color
+          )
         )
-      )
+      None
+    else:
+      for i in range(0, len(self.value_range) - 1):
+        val0 = self.value_range[i + 0]
+        val1 = self.value_range[i + 1]
+        color = self.cell.to_gauge_color(output, val0, in_graph=True)
+        self.ax.add_patch(
+          patches.Wedge(
+            (0.5, 0.4), 0.44, *self.fig_value_angles(val0, val1),
+            facecolor=color, edgecolor=self.background_color,
+            lw=self.base_width
+          )
+        )
 
     self.ax.add_patch(
       patches.Circle(
@@ -49,12 +63,14 @@ class InfluxDBDashboardGaugeOutput(InfluxDBDashboardMatplotlibOutput):
     )
 
   def draw_value_labels(self, output):
-    for degree in range(0, 271, 54):
+    horizontal_alignments = ('right', 'right', 'right', 'left', 'left', 'left')
+    for i in range(0, 6):
+      degree = i * 270 / 5
       value = self.value(degree)
       value_text = self.cell.to_string(value)
       polygon_coords = [
         self.angle_coords(degree, 0.44),
-        self.angle_coords(degree, 0.45)
+        self.angle_coords(degree, 0.46)
       ]
       self.ax.add_patch(
         patches.Polygon(
@@ -64,8 +80,8 @@ class InfluxDBDashboardGaugeOutput(InfluxDBDashboardMatplotlibOutput):
       self.ax.text(
         *self.angle_coords(degree, 0.475),
         value_text,
-        horizontalalignment='center', verticalalignment='center',
-        fontsize=round(self.base_width * 5), fontweight='bold', color=self.foreground_color
+        horizontalalignment=horizontal_alignments[i], verticalalignment='center',
+        fontsize=round(self.base_width * 8), fontweight='bold', color=self.foreground_color
       )
 
   def draw_value_indicator(self, output, value):
@@ -92,7 +108,7 @@ class InfluxDBDashboardGaugeOutput(InfluxDBDashboardMatplotlibOutput):
         facecolor=self.foreground_color
       )
     )
-    
+
   def draw_value_text(self, output, value, row):
     value_text = self.cell.to_string(value, row=row)
 

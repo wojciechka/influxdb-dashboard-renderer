@@ -45,13 +45,15 @@ class InfluxDBDashboardCellOutput:
   def to_string(self, value, row=None):
     if type(value).__name__ == 'float':
       n_digits = self.cell.decimal_places if self.cell.decimal_places != None else self.round_digits(value)
-      return '%g' % (round(value, n_digits))
+      text = '%g' % (round(value, n_digits))
     elif row != None:
       if type(value).__name__ == 'datetime' and row.values.get('__dateformat', None) != None:
         if row.values.get('__localtz', False) == True:
           value = value.astimezone(get_localzone())
-        return value.strftime(row['__dateformat'])
-    return '%s' % (value)
+        text = value.strftime(row['__dateformat'])
+    else:
+      text = '%s' % (value)
+    return '%s%s%s' % (self.cell.value_prefix, text, self.cell.value_suffix)
 
   def round_digits(self, vmax, vmin=0):
     diff = vmax - vmin
@@ -61,6 +63,11 @@ class InfluxDBDashboardCellOutput:
   def to_text_color(self, output, value=None, in_graph=False):
     colors = self.cell.color_map['text']
     if output.mode == 'bw':
+      if output.dark:
+        color = (255, 255, 255)
+      else:
+        color = (0, 0, 0)
+    elif output.mode == 'bw4':
       if output.dark:
         color = (255, 255, 255)
       else:
@@ -80,6 +87,11 @@ class InfluxDBDashboardCellOutput:
         color = (255, 255, 255)
       else:
         color = (0, 0, 0)
+    if output.mode == 'bw4':
+      if output.dark:
+        color = (170, 170, 170)
+      else:
+        color = (0, 0, 0)
 
     elif len(colors) < 2 or total < 2:
       color = colors[0]['color']
@@ -93,12 +105,12 @@ class InfluxDBDashboardCellOutput:
         color = colors[c0]['color']
       else:
         cd = ci - c0
-        color0 = colorsys.rgb_to_hls(*colors[c0]['color'])
-        color1 = colorsys.rgb_to_hls(*colors[c1]['color'])
-        color = colorsys.hls_to_rgb(*self.merge_color(color0, color1, cd))
+        color = self.merge_color(colors[c0], colors[c1], cd)
 
     if fill:
       if output.mode == 'bw':
+        alpha = 85
+      if output.mode == 'bw4':
         alpha = 85
       else:
         alpha = 100
@@ -115,13 +127,20 @@ class InfluxDBDashboardCellOutput:
         color = (255, 255, 255)
       else:
         color = (0, 0, 0)
+    elif len(self.cell.colors) == 2:
+      # for 2-color gauges, calculate transient colors
+      (color0, color1) = self.cell.colors
+      min_value = color0['value']
+      max_value = self.cell.colors[1]['value']
+      cd = (value - color0['value']) / (color1['value'] - color0['value'])
+      color = self.merge_color(color0, color1, cd)
     else:
+      # for gauges not using 2 colors, render regular ranges
       color = self.cell.colors[0]['color']
       for col in self.cell.colors[1:-1]:
         if value >= col['value']:
           color = col['color']
     return self.return_color(color, in_graph)
-
 
   def return_color(self, color, in_graph):
     if in_graph:
@@ -130,5 +149,9 @@ class InfluxDBDashboardCellOutput:
       return '#' + ''.join(map(lambda c: '%02x' % (c), color))
 
   def merge_color(self, color0, color1, cd):
-    merge_color_item = lambda i: color0[i] + (color1[i] - color0[i]) * cd
-    return (merge_color_item(0), merge_color_item(1), merge_color_item(2))
+    cd = 1.0 if cd > 1.0 else cd
+    cd = 0.0 if cd < 0.0 else cd
+    hls_color0 = colorsys.rgb_to_hls(*color0['color'])
+    hls_color1 = colorsys.rgb_to_hls(*color1['color'])
+    merge_color_item = lambda i: hls_color0[i] + (hls_color1[i] - hls_color0[i]) * cd
+    return colorsys.hls_to_rgb(merge_color_item(0), merge_color_item(1), merge_color_item(2))

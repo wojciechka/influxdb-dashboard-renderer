@@ -13,17 +13,22 @@ class InfluxDBDashboardMatplotlibOutput(InfluxDBDashboardBaseOutput):
     self.init_figure_and_axes()
     self.draw_figure(self.canvas, self.output)
     self.paste_figure()
+    plt.close(self.fig)
   
   def draw_figure(self, canvas, output):
     None
 
-  def init_figure_and_axes(self, figsize=None, show_axes=True):
+  def init_figure_and_axes(self, figsize=None, show_axes=True, constrained_layout=True):
     if figsize == None:
       figsize = self.canvas.size
     
     figsize = (figsize[0] / self.output.dpi, figsize[1] / self.output.dpi)
 
-    self.fig = plt.figure(figsize=figsize, dpi=self.output.dpi, facecolor=self.background_color, edgecolor=self.background_color, constrained_layout=True)
+    self.fig = plt.figure(
+      figsize=figsize, dpi=self.output.dpi,
+      facecolor=self.background_color, edgecolor=self.background_color,
+      constrained_layout=constrained_layout
+    )
     self.ax = self.fig.gca(facecolor=self.background_color)
 
     if show_axes:
