@@ -54,7 +54,6 @@ class InfluxDBDashboardOutput:
         max_size=0.9
       )
 
-
   def output_canvas(self, canvas):
     if self.mode == 'bw':
       # workaround for font border not being drawn correctly unless the image is converted to 3 colors

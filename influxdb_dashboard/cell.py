@@ -43,6 +43,7 @@ class InfluxDBDashboardCellOutput:
     return items_to_draw
 
   def to_string(self, value, row=None):
+    text = '%s' % (value)
     if type(value).__name__ == 'float':
       n_digits = self.cell.decimal_places if self.cell.decimal_places != None else self.round_digits(value)
       text = '%g' % (round(value, n_digits))
@@ -51,8 +52,8 @@ class InfluxDBDashboardCellOutput:
         if row.values.get('__localtz', False) == True:
           value = value.astimezone(get_localzone())
         text = value.strftime(row['__dateformat'])
-    else:
-      text = '%s' % (value)
+      elif row.values.get('__textvalue', None) != None:
+        return row['__textvalue']
     return '%s%s%s' % (self.cell.value_prefix, text, self.cell.value_suffix)
 
   def round_digits(self, vmax, vmin=0):
@@ -60,25 +61,41 @@ class InfluxDBDashboardCellOutput:
     diffLog10 = math.log10(diff)
     return max(0, round(2 - diffLog10))
 
-  def to_text_color(self, output, value=None, in_graph=False):
-    colors = self.cell.color_map['text']
-    if output.mode == 'bw':
-      if output.dark:
-        color = (255, 255, 255)
-      else:
-        color = (0, 0, 0)
-    elif output.mode == 'bw4':
-      if output.dark:
-        color = (255, 255, 255)
-      else:
-        color = (0, 0, 0)
+  def to_text_and_background_color(self, output, value=None, in_graph=False):
+    if output.dark:
+      bg_color = (0, 0, 0)
+      fg_color = (255, 255, 255)
     else:
-      color = colors[0]['color']
-      if value != None and len(colors) > 1:
-        for c in colors:
-          if value >= c['value']:
-            color = c['color']
-    return self.return_color(color, in_graph)
+      bg_color = (255, 255, 255)
+      fg_color = (0, 0, 0)
+
+    if output.mode == 'bw':
+      None
+    elif output.mode == 'bw4':
+      None
+    elif 'background' in self.cell.color_map:
+      # set foreground to background color, same as InfluxDB does
+      fg_color = bg_color
+      bg_color = self.to_color_from_map('background', value)
+    elif 'text' in self.cell.color_map:
+      fg_color = self.to_color_from_map('text', value)
+
+    return [
+      self.return_color(fg_color, in_graph),
+      self.return_color(bg_color, in_graph)
+    ]
+
+  def to_color_from_map(self, key, value):
+    colors = self.cell.color_map[key]
+    color = colors[0]['color']
+    if value != None and len(colors) > 1:
+      for c in colors:
+        if value >= c['value']:
+          color = c['color']
+    return color
+
+  def to_text_color(self, output, value=None, in_graph=False):
+    return self.to_text_and_background_color(output, value=value, in_graph=in_graph)[0]
 
   def to_scale_color(self, output, index, total, fill=False, in_graph=False):
     colors = self.cell.color_map['scale']
@@ -143,6 +160,7 @@ class InfluxDBDashboardCellOutput:
     return self.return_color(color, in_graph)
 
   def return_color(self, color, in_graph):
+    color = list(map(lambda c: min(255, max(c, 0)), color))
     if in_graph:
       return list(map(lambda c: c / 255.0, color))
     else:

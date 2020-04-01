@@ -24,14 +24,23 @@ class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardBaseOutput):
 
     border_width = 1
 
-    foreground_color = self.cell.to_text_color(output, value=value)
+    (foreground_color, background_color) = self.cell.to_text_and_background_color(output, value=value)
 
     box = box if box != None else (canvas.size[0] - box_offset[0], canvas.size[1] - box_offset[1])
+
+    ImageDraw.Draw(canvas).rectangle(
+      [
+        box_offset[0], box_offset[1],
+        box_offset[0] + box[0], box_offset[1] + box[1],
+      ],
+      fill=background_color,
+      width=0,
+    )
 
     draw_text_on_canvas(
       canvas, output.font_name, box, text,
       foreground_color,
-      border_color=self.background_color,
+      border_color=background_color,
       border_width=border_width,
       max_size=self.max_size,
       offset=box_offset

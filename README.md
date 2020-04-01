@@ -36,7 +36,7 @@ c = InfluxDBClient(url='https://eu-central-1-1.aws.cloud2.influxdata.com', token
 d = InfluxDBDashboardView.find_by_label(c, LABEL)
 
 # optionally set timeRangeStart, timeRangeStop and windowPeriod to show last 30 days, using 15 minute windows
-d.init_params(start_offset=-(30*24*60), end_offset=0, window_period=15, offset_unit='m')
+d.set_time_range(start_offset=-(30*24*60), end_offset=0, window_period=15, offset_unit='m')
 
 # render to an image - defaults to 1920x1080 pixels image, but this can be customized
 o = InfluxDBDashboardOutput(dpi=150, rows=d.height)

@@ -12,6 +12,18 @@ class InfluxDBDashboardExtern:
     self.variable = variable
     self.properties = []
 
+  def add_string_literal(self, name, value):
+    self.properties += [
+      {
+        'type': 'Property',
+        'key': { 'type': 'Identifier', 'name': name },
+        'value': {
+          'type': 'StringLiteral',
+          'value': value,
+        }
+      }
+    ]
+
   def add_time_offset_variable(self, name, offset, offset_unit='h'):
     self.properties += [
       {
@@ -122,11 +134,21 @@ class InfluxDBDashboardCell:
         self.color_map[t] = []
       self.color_map[t] += [c]
 
-  def init_params(self, start_offset=-(7*24*60), end_offset=-60, window_period=15, offset_unit='m'):
+  def init_params(self):
     self._extern_obj = InfluxDBDashboardExtern('v')
+    self.set_time_range()
+
+  def set_time_range(self, start_offset=-(7*24*60), end_offset=0, window_period=15, offset_unit='m'):
     self._extern_obj.add_time_offset_variable('timeRangeStart', start_offset, offset_unit=offset_unit)
-    self._extern_obj.add_time_offset_variable('timeRangeStop', 0, offset_unit=offset_unit)
+    self._extern_obj.add_time_offset_variable('timeRangeStop', end_offset, offset_unit=offset_unit)
     self._extern_obj.add_duration_variable('windowPeriod', window_period, offset_unit=offset_unit)
+    self._extern = self._extern_obj.serialize()
+    # invalidate any previously stored results
+    self._results = None
+
+  def set_string_literval_variable(self, name, value):
+    # TODO: handle duplicated values
+    self._extern_obj.add_string_literal(name, value)
     self._extern = self._extern_obj.serialize()
     # invalidate any previously stored results
     self._results = None
@@ -178,13 +200,26 @@ class InfluxDBDashboardView:
     self.description = info.description
     self.cells_info = info.cells
     self.init_height()
+    self._cells = None
 
   def init_height(self):
     items = [1] + list(map(lambda c: 0 + c.y + c.h, self.cells_info))
     self.height = max(*items)
 
   def cells(self):
-    return map(lambda cell_info: InfluxDBDashboardCell(self.client, self.org_id, self.id, cell_info), self.cells_info)
+    if self._cells == None:
+      self._cells = list(map(lambda cell_info: InfluxDBDashboardCell(self.client, self.org_id, self.id, cell_info), self.cells_info))
+    return self._cells
+
+  def set_time_range(self, start_offset=-(7*24*60), end_offset=0, window_period=15, offset_unit='m'):
+    for cell in self.cells():
+      cell.set_time_range(start_offset=start_offset, end_offset=end_offset, window_period=window_period, offset_unit=offset_unit)
+
+  def set_string_literval_variable(self, name, value):
+    for cell in self.cells():
+      cell.set_string_literval_variable(name, value)
+
+  # TODO: improve
 
   @classmethod
   def find_by_label(cls, client, label_name, org_id=None):
