@@ -104,12 +104,11 @@ class InfluxDBDashboardCellOutput:
         color = (255, 255, 255)
       else:
         color = (0, 0, 0)
-    if output.mode == 'bw4':
+    elif output.mode == 'bw4':
       if output.dark:
         color = (170, 170, 170)
       else:
         color = (0, 0, 0)
-
     elif len(colors) < 2 or total < 2:
       color = colors[0]['color']
     elif len(colors) > total:
@@ -126,8 +125,8 @@ class InfluxDBDashboardCellOutput:
 
     if fill:
       if output.mode == 'bw':
-        alpha = 85
-      if output.mode == 'bw4':
+        alpha = 128
+      elif output.mode == 'bw4':
         alpha = 85
       else:
         alpha = 100

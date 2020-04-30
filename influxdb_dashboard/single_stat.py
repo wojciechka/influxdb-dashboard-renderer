@@ -28,15 +28,6 @@ class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardBaseOutput):
 
     box = box if box != None else (canvas.size[0] - box_offset[0], canvas.size[1] - box_offset[1])
 
-    ImageDraw.Draw(canvas).rectangle(
-      [
-        box_offset[0], box_offset[1],
-        box_offset[0] + box[0], box_offset[1] + box[1],
-      ],
-      fill=background_color,
-      width=0,
-    )
-
     draw_text_on_canvas(
       canvas, output.font_name, box, text,
       foreground_color,
