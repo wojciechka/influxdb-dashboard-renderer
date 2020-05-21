@@ -6,12 +6,13 @@ from io import BytesIO
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET'])
+@app.route('/', methods=['POST'])
 def root():
-    token='replace me'
-    org_id='844910ece80be8bc'
-    label='rick'
-    url="https://influxdb.aws.influxdata.io"
+    data = request.get_json()
+    token=data['token']
+    org_id=data["org_id"]
+    label=data["label"]
+    url=data["url"]
     c = InfluxDBClient(url=url, token=token, org=org_id)
     d = InfluxDBDashboardView.find_by_label(c, label)
 
