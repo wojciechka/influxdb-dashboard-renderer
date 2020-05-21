@@ -8,6 +8,7 @@ $ run -p 5000:5000 ifserve
 Then, do a POST to localhost:5000/
 
 with a json payload in the body similar to:
+```json
   {
   	"token":"mytoken",
     "org_id":"myorgid",
@@ -16,3 +17,4 @@ with a json payload in the body similar to:
     "width":300,
     "height":300
   }
+  ```
