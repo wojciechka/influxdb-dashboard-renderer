@@ -35,10 +35,10 @@ def get_dashboard_from_request():
   mode=data.get('mode', os.environ.get('INFLUXDB_DASHBOARD_MODE', 'color'))
   dpi=int(data.get('dpi', os.environ.get('INFLUXDB_DASHBOARD_DPI', '150')))
 
-  c = InfluxDBClient(url=url, token=token, org=org_id)
-
   if token == None or org_id == None or url == None or (dashboard_label == None and dashboard_id == None):
     return Response('{"status": "error", "message": "not all arguments were provided"}', status=422, mimetype='application/json')
+
+  c = InfluxDBClient(url=url, token=token, org=org_id)
 
   # TODO: support passing arbitrary variables to dashboards
 
