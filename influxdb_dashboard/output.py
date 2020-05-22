@@ -1,12 +1,16 @@
 import math
 from PIL import Image, ImageDraw, ImageFont
 from influxdb_dashboard.text import draw_text_on_canvas
+from influxdb_dashboard import cell
 
 class InfluxDBDashboardBaseOutput:
   def __init__(self, cell=None, canvas=None, output=None):
     self.cell = cell
     self.canvas = canvas
     self.output = output
+
+  def alert_state(self):
+    return cell.ALERT_STATE_OK
 
   def draw(self):
     self.background_color = self.output.background_color()
@@ -20,8 +24,6 @@ class InfluxDBDashboardBaseOutput:
       return (row, value)
     else:
       return [None, None]
-
-
 
 class InfluxDBDashboardOutput:
   def __init__(self, width=1920, height=1080, cols=12, rows=8, dpi=100, mode='color', dark=True, font_name='arialnb.ttf', show_titles=True):
@@ -42,6 +44,13 @@ class InfluxDBDashboardOutput:
       box = (self.x['offset_table'][cell.x], self.y['offset_table'][cell.y] + self.title_height)
       canvas.paste(img, box=box)
     return self.output_canvas(canvas)
+
+  def alert_state(self, dashboard):
+    states = list(map(lambda c: c.cell_output().alert_state(), dashboard.cells()))
+    states = list(filter(lambda c: c != None, states))
+    if len(states) == 0:
+      return cell.ALERT_STATE_UNKNOWN
+    return max(states)
 
   def draw_title(self, canvas, cell, cell_output):
     if self.title_height > 0 and cell.name != None:

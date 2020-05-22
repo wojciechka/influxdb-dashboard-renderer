@@ -1,5 +1,5 @@
-from flask import Flask, request, Response, send_file
-from influxdb_dashboard import InfluxDBDashboardView, InfluxDBDashboardOutput
+from flask import Flask, jsonify, request, Response, send_file
+from influxdb_dashboard import cell, InfluxDBDashboardView, InfluxDBDashboardOutput
 from werkzeug.wsgi import FileWrapper
 from influxdb_client import InfluxDBClient
 import matplotlib.pyplot as plt
@@ -10,17 +10,7 @@ import re
 
 app = Flask(__name__)
 
-# ensure GET requests are not cached
-@app.after_request
-def set_response_headers(response):
-  response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-  response.headers['Pragma'] = 'no-cache'
-  response.headers['Expires'] = '0'
-  return response
-
-@app.route('/', methods=['GET', 'POST'])
-@app.route('/render', methods=['GET', 'POST'])
-def render():
+def get_dashboard_from_request():
   if request.method == 'POST':
     data = request.get_json()
   else:
@@ -55,10 +45,7 @@ def render():
   if dashboard_id != None:
     d = InfluxDBDashboardView(c, dashboard_id)
   elif dashboard_label != None:
-    d = InfluxDBDashboardView.find_by_label(c, dashboard_label)
-  else:
-    # TODO: throw error
-    None
+    d = InfluxDBDashboardView.find_by_label(c, dashboard_label) 
 
   variables = {}
   if data.get('variables') != None:
@@ -81,6 +68,24 @@ def render():
     d.set_string_literval_variable(key, value)
 
   o = InfluxDBDashboardOutput(dpi=dpi, rows=d.height, width=width, height=height, mode=mode)
+  return [c, d, o]
+
+# ensure GET requests are not cached
+@app.after_request
+def set_response_headers(response):
+  response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+  response.headers['Pragma'] = 'no-cache'
+  response.headers['Expires'] = '0'
+  return response
+
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/render', methods=['GET', 'POST'])
+def render():
+  result = get_dashboard_from_request()
+  if isinstance(result, Response):
+    return result
+  (c, d, o) = result
+
   img = o.draw(d)
 
   # workaround for matplotlib leaking memory despite calling plt.close(self.fig) in matplotlib_output.py
@@ -91,5 +96,18 @@ def render():
   img_io.seek(0)
 
   return send_file(img_io, mimetype='image/png')
+
+@app.route('/alert-status', methods=['GET', 'POST'])
+def alert_status():
+  result = get_dashboard_from_request()
+  if isinstance(result, Response):
+    return result
+  (c, d, o) = result
+  
+  return jsonify({
+    'status': 'ok',
+    'state': cell.ALERT_STATE_TEXT[o.alert_state(d)]
+  })
+
 
 app.run(host='0.0.0.0')

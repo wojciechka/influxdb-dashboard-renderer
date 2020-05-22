@@ -1,8 +1,19 @@
 from PIL import Image, ImageDraw, ImageFont
 from influxdb_dashboard.text import draw_text_on_canvas
+from influxdb_dashboard import cell
 import math
 
 from influxdb_dashboard.output import InfluxDBDashboardBaseOutput
+
+# TODO: move to another file
+ALERT_COLORS_WARN = [
+  '#f48d38', # tiger
+  '#f95f53', # curacao
+]
+ALERT_COLORS_CRIT = [
+  '#bf3d5e', # ruby
+  '#dc4e58', # fire
+]
 
 class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardBaseOutput):
   def __init__(self, border=False, max_size=0.9, **kwargs):
@@ -10,14 +21,28 @@ class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardBaseOutput):
     self.max_size = max_size
     super().__init__(**kwargs)
 
+  def alert_state(self):
+    (row, value) = self.row_and_value()
+    (foreground_color, background_color) = self.cell.to_text_and_background_color(None, value=value)
+    if (foreground_color in ALERT_COLORS_CRIT) or (background_color in ALERT_COLORS_CRIT):
+      return cell.ALERT_STATE_CRIT
+    if (foreground_color in ALERT_COLORS_WARN) or (background_color in ALERT_COLORS_WARN):
+      return cell.ALERT_STATE_WARN
+    else:
+      return cell.ALERT_STATE_OK
+
+  def row_and_value(self):
+    if len(self.cell.tables) > 0 and len(self.cell.tables[-1].records) > 0:
+      row = self.cell.tables[-1].records[-1]
+      value = row[self.cell.cell.y_column]
+    else:
+      value = ""
+      row = None
+    return (row, value)
+
   def draw_figure(self, canvas, output, text=None, box_offset=(0, 0), box=None):
     if text == None or foreground_color == None:
-      if len(self.cell.tables) > 0 and len(self.cell.tables[-1].records) > 0:
-        row = self.cell.tables[-1].records[-1]
-        value = row[self.cell.cell.y_column]
-      else:
-        value = ""
-        row = None
+      (row, value) = self.row_and_value()
 
     if text == None:
       text = self.cell.to_string(value, row=row)

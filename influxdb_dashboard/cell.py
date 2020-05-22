@@ -7,6 +7,18 @@ import pytz
 import math
 import colorsys
 
+ALERT_STATE_OK = 0
+ALERT_STATE_WARN = 1
+ALERT_STATE_CRIT = 2
+ALERT_STATE_UNKNOWN = 3
+
+ALERT_STATE_TEXT = {
+  ALERT_STATE_OK: 'ok',
+  ALERT_STATE_WARN: 'warn',
+  ALERT_STATE_CRIT: 'crit',
+  ALERT_STATE_UNKNOWN: 'unknown',
+}
+
 class InfluxDBDashboardCellOutput:
   def __init__(self, cell, tables):
     self.cell = cell
@@ -42,6 +54,12 @@ class InfluxDBDashboardCellOutput:
       )
     return items_to_draw
 
+  def alert_state(self, canvas=None, output=None):
+    states = list(map(lambda i: i.alert_state(), self.items_to_draw(canvas, output)))
+    if len(states) == 0:
+      return None
+    return max(states)
+
   def to_string(self, value, row=None):
     text = '%s' % (value)
     if type(value).__name__ == 'float':
@@ -62,16 +80,16 @@ class InfluxDBDashboardCellOutput:
     return max(0, round(2 - diffLog10))
 
   def to_text_and_background_color(self, output, value=None, in_graph=False):
-    if output.dark:
+    if output != None and output.dark:
       bg_color = (0, 0, 0)
       fg_color = (255, 255, 255)
     else:
       bg_color = (255, 255, 255)
       fg_color = (0, 0, 0)
 
-    if output.mode == 'bw':
+    if output != None and output.mode == 'bw':
       None
-    elif output.mode == 'bw4':
+    elif output != None and output.mode == 'bw4':
       None
     elif 'background' in self.cell.color_map:
       # set foreground to background color, same as InfluxDB does
