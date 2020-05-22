@@ -2,8 +2,18 @@ from matplotlib import patches
 import math
 
 from influxdb_dashboard.matplotlib_output import InfluxDBDashboardMatplotlibOutput
+from influxdb_dashboard import cell
 
 class InfluxDBDashboardGaugeOutput(InfluxDBDashboardMatplotlibOutput):
+  def alert_state(self):
+    (row, value) = self.latest_row_and_value()
+    if value == None:
+      return cell.ALERT_STATE_OK
+    elif value >= self.cell.cell.colors[-1]['value']:
+      return cell.ALERT_STATE_CRIT
+    else:
+      return cell.ALERT_STATE_OK
+
   def draw_figure(self, canvas, output):
     self.init_degrees()
     # TODO: move to helper

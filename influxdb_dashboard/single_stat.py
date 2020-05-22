@@ -22,7 +22,10 @@ class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardBaseOutput):
     super().__init__(**kwargs)
 
   def alert_state(self):
-    (row, value) = self.row_and_value()
+    (row, value) = self.latest_row_and_value()
+    if value == None:
+      return cell.ALERT_STATE_OK
+
     (foreground_color, background_color) = self.cell.to_text_and_background_color(None, value=value)
     if (foreground_color in ALERT_COLORS_CRIT) or (background_color in ALERT_COLORS_CRIT):
       return cell.ALERT_STATE_CRIT
@@ -31,18 +34,9 @@ class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardBaseOutput):
     else:
       return cell.ALERT_STATE_OK
 
-  def row_and_value(self):
-    if len(self.cell.tables) > 0 and len(self.cell.tables[-1].records) > 0:
-      row = self.cell.tables[-1].records[-1]
-      value = row[self.cell.cell.y_column]
-    else:
-      value = ""
-      row = None
-    return (row, value)
-
   def draw_figure(self, canvas, output, text=None, box_offset=(0, 0), box=None):
     if text == None or foreground_color == None:
-      (row, value) = self.row_and_value()
+      (row, value) = self.latest_row_and_value()
 
     if text == None:
       text = self.cell.to_string(value, row=row)
