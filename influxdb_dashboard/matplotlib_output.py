@@ -14,14 +14,14 @@ class InfluxDBDashboardMatplotlibOutput(InfluxDBDashboardBaseOutput):
     self.draw_figure(self.canvas, self.output)
     self.paste_figure()
     plt.close(self.fig)
-  
+
   def draw_figure(self, canvas, output):
     None
 
   def init_figure_and_axes(self, figsize=None, show_axes=True, constrained_layout=True):
     if figsize == None:
       figsize = self.canvas.size
-    
+
     figsize = (figsize[0] / self.output.dpi, figsize[1] / self.output.dpi)
 
     self.fig = plt.figure(
@@ -55,3 +55,4 @@ class InfluxDBDashboardMatplotlibOutput(InfluxDBDashboardBaseOutput):
       )
       self.canvas.paste(img, box=offset)
       img.close()
+    bytes.close()

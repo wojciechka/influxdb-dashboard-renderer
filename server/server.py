@@ -2,6 +2,7 @@ from flask import Flask, request, Response, send_file
 from influxdb_dashboard import InfluxDBDashboardView, InfluxDBDashboardOutput
 from werkzeug.wsgi import FileWrapper
 from influxdb_client import InfluxDBClient
+import matplotlib.pyplot as plt
 
 from io import BytesIO
 import os
@@ -81,6 +82,10 @@ def render():
 
   o = InfluxDBDashboardOutput(dpi=dpi, rows=d.height, width=width, height=height, mode=mode)
   img = o.draw(d)
+
+  # workaround for matplotlib leaking memory despite calling plt.close(self.fig) in matplotlib_output.py
+  plt.close('all')
+
   img_io = BytesIO()
   img.save(img_io, format='PNG')
   img_io.seek(0)

@@ -114,7 +114,7 @@ class InfluxDBDashboardCell:
     self.name = self.info.name
 
   def init_queries(self):
-    self.queries = map(lambda q: q['text'], self.info.properties['queries'])
+    self.queries = map(lambda q: q['text'], self.info.properties.get('queries', []))
     self.query_api = self.client.query_api()
     self.query_service = QueryService(self.client.api_client)
 
@@ -133,7 +133,7 @@ class InfluxDBDashboardCell:
 
   def init_colors(self):
     convert_color = lambda c: {**c, 'color': (int(c['hex'][1:3], 16), int(c['hex'][3:5], 16), int(c['hex'][5:7], 16))}
-    self.colors = list(map(convert_color, self.info.properties['colors']))
+    self.colors = list(map(convert_color, self.info.properties.get('colors', [])))
     self.color_map = {}
     for c in self.colors:
       t = c['type']

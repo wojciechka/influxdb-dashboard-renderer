@@ -1,6 +1,3 @@
-import matplotlib.pyplot as plt
-import matplotlib
-
 from influxdb_dashboard.matplotlib_output import InfluxDBDashboardMatplotlibOutput
 
 class InfluxDBDashboardGraphOutput(InfluxDBDashboardMatplotlibOutput):
