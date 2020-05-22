@@ -5,6 +5,7 @@ from influxdb_client import InfluxDBClient
 
 from io import BytesIO
 import os
+import re
 
 app = Flask(__name__)
 
@@ -58,7 +59,25 @@ def render():
     # TODO: throw error
     None
 
+  variables = {}
+  if data.get('variables') != None:
+    # if variables is passed as a JSON object, use that, expecting the object to be
+    # { value: "value" }
+    variables = data.get('variables')
+  else:
+    # otherwise assume literal values as variable_* parameters
+    for key in filter(lambda k: re.match('^variable_', k), data.keys()):
+      # extract key suffix
+      variables[key[9:]] = { 'value': data[key] }
+
   d.set_time_range(start_offset=start_offset, end_offset=end_offset, window_period=window_period, offset_unit=offset_unit)
+  for key in variables.keys():
+    try:
+      value = variables[key]['value']
+    except:
+      return Response('{"status": "error", "message": "variable value not provided"}', status=422, mimetype='application/json')
+    # TODO: support other types of values for variables
+    d.set_string_literval_variable(key, value)
 
   o = InfluxDBDashboardOutput(dpi=dpi, rows=d.height, width=width, height=height, mode=mode)
   img = o.draw(d)
@@ -68,6 +87,4 @@ def render():
 
   return send_file(img_io, mimetype='image/png')
 
-
 app.run(host='0.0.0.0')
-
