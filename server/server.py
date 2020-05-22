@@ -22,6 +22,7 @@ def get_dashboard_from_request():
   url=data.get('url', os.environ.get('INFLUXDB_URL'))
   dashboard_label=data.get('label', os.environ.get('INFLUXDB_DASHBOARD_LABEL'))
   dashboard_id=data.get('id', os.environ.get('INFLUXDB_DASHBOARD_ID'))
+  dark=data.get('bright', None) == None
 
   # dashboard time range
   start_offset=int(data.get('start_offset', -7*24*60))
@@ -67,7 +68,7 @@ def get_dashboard_from_request():
     # TODO: support other types of values for variables
     d.set_string_literval_variable(key, value)
 
-  o = InfluxDBDashboardOutput(dpi=dpi, rows=d.height, width=width, height=height, mode=mode)
+  o = InfluxDBDashboardOutput(dpi=dpi, rows=d.height, width=width, height=height, mode=mode, dark=dark)
   return [c, d, o]
 
 # ensure GET requests are not cached
