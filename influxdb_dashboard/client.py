@@ -12,7 +12,11 @@ class InfluxDBDashboardExtern:
     self.variable = variable
     self.properties = []
 
+  def remove_property(self, name):
+    self.properties = list(filter(lambda property: property['key']['name'] != name, self.properties))
+
   def add_string_literal(self, name, value):
+    self.remove_property(name)
     self.properties += [
       {
         'type': 'Property',
@@ -25,6 +29,7 @@ class InfluxDBDashboardExtern:
     ]
 
   def add_time_offset_variable(self, name, offset, offset_unit='h'):
+    self.remove_property(name)
     self.properties += [
       {
         'type': 'Property',
@@ -38,6 +43,7 @@ class InfluxDBDashboardExtern:
     ]
 
   def add_now(self, name):
+    self.remove_property(name)
     self.properties += [
       {
         'type': 'Property',
@@ -50,6 +56,7 @@ class InfluxDBDashboardExtern:
     ]
 
   def add_duration_variable(self, name, offset, offset_unit='h'):
+    self.remove_property(name)
     self.properties += [
       {
         'type': 'Property',
