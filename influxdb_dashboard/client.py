@@ -1,6 +1,6 @@
 # wrapper around InfluxDBClient to handle dashboard and cells
 
-from influxdb_client import InfluxDBClient, CellsService, DashboardsService, Dialect, QueryService, Query
+from influxdb_client import InfluxDBClient, CellsService, DashboardsService, Dialect, QueryService, Query, rest
 from influxdb_client.client.flux_csv_parser import FluxCsvParser, FluxSerializationMode
 from influxdb_dashboard.cell import InfluxDBDashboardCellOutput
 
@@ -173,14 +173,20 @@ class InfluxDBDashboardCell:
     )
 
     query = Query(query=query_string, dialect=dialect, extern=self._extern)
-    response = self.query_service.post_query(
-      org=self.client.org,
-      query=query,
-      async_req=False, _preload_content=False, _return_http_data_only=False
-    )
-    _parser = FluxCsvParser(response=response, serialization_mode=FluxSerializationMode.tables)
-    list(_parser.generator())
-    return _parser.tables
+    try:
+      response = self.query_service.post_query(
+        org=self.client.org,
+        query=query,
+        async_req=False, _preload_content=False, _return_http_data_only=False
+      )
+      _parser = FluxCsvParser(response=response, serialization_mode=FluxSerializationMode.tables)
+      list(_parser.generator())
+      tables = _parser.tables
+    except rest.ApiException as error:
+      # TODO: log error
+      print('Error while retrieving data:', error)
+      tables = []
+    return tables
 
   def results(self):
     if self._results == None:
