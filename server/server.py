@@ -109,5 +109,10 @@ def alert_status():
     'state': cell.ALERT_STATE_TEXT[o.alert_state(d)]
   })
 
+@app.route('/health', methods=['GET'])
+def health():
+  return jsonify({
+    'status': 'ok',
+  })
 
 app.run(host='0.0.0.0')
