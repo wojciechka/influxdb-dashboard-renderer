@@ -190,7 +190,9 @@ class InfluxDBDashboardCell:
     return InfluxDBDashboardCellOutput(self, self.flat_results())
 
 class InfluxDBDashboardView:
-  def __init__(self, client, org_id, dashboard_id):
+  def __init__(self, client, dashboard_id, org_id=None):
+    if org_id == None:
+      org_id = client.org
     self.client = client
     self.org_id = org_id
     self.id = dashboard_id
@@ -232,4 +234,4 @@ class InfluxDBDashboardView:
     if len(matches) == 0:
       return None
     else:
-      return cls(client, org_id, matches[0].id)
+      return cls(client, matches[0].id, org_id=org_id)

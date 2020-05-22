@@ -8,7 +8,7 @@ RUN pip install matplotlib
 RUN pip install tzlocal
 
 RUN mkdir /dashboard
-COPY server/ARIALNB.TTF /usr/share/fonts/truetype/arialnb.ttf
+COPY arialnb.ttf /usr/share/fonts/truetype/arialnb.ttf
 WORKDIR /dashboard
 
 COPY ./influxdb_dashboard /dashboard/influxdb_dashboard
