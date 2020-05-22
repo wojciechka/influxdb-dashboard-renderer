@@ -1,0 +1,18 @@
+{
+    "renderer_url":"http://localhost:5000/alert-status",
+    "notifications":[
+        {
+            "name":"test notification",
+            "params":"?id=05bb6551244c0000",
+            "alert_specification":{
+                "type":"twilio",
+                "token":"==",
+                "from_phone":"+",
+                "to_phone":"+",
+                "account":""
+            },
+            "interval":60
+        }
+    ]
+}
+
