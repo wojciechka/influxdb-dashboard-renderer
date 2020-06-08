@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from flask import Flask, jsonify, request, Response, send_file
 from influxdb_dashboard import cell, InfluxDBDashboardView, InfluxDBDashboardOutput
 from werkzeug.wsgi import FileWrapper
