@@ -6,15 +6,14 @@ The first goal of the project is to render dashboards that only use a subset of 
 
 The longer term goal is to mimic most views and specifics of InfluxDB 2.0 dashboards to also allow rendering more complex dashboards.
 
-# Example dashboard
+Below is an example rendering of an example dashboard:
 
-Below is an example rendering of a dashboard:
+![Example output dashboard](docs/example-dashboard-comparison.png)
 
-![Example output dashboard](docs/example-dashboard.png)
+The dashboard rendered with this Python module is shown on the left side of the image.
 
-Along with a screenshot of InfluxDB dashboard for comparsison:
+The right side of the image shows the same dashboard as rendered by the InfluxDB UI.
 
-![Example original dashboard](docs/example-dashboard-infludb.png)
 
 # Getting started
 
