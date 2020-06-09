@@ -53,7 +53,7 @@ The `(access token)` should be an all-access token for your organization inside 
 
 The `(organization id)` and `(dashboard id)` as 16-letter hexadecimal identifiers of the organization and dashboard inside InfluxDB. The identifiers can be extracted from the dashboard view URL, where the URL is `https://hostname/orgs/(organization id)/dashboards/(dashboard id)`.
 
-For more information on building and running the included web server functionality, please check the [server directory][server].
+For more information on building and running the included web server functionality, please check the [server directory](server).
 
 ## Python package and rendering outputs manually
 
