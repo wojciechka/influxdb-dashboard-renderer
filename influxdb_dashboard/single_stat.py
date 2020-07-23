@@ -16,7 +16,8 @@ ALERT_COLORS_CRIT = [
 ]
 
 class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardBaseOutput):
-  def __init__(self, border=False, max_size=0.9, **kwargs):
+  def __init__(self, border=False, max_size=0.9, draw_background=False, **kwargs):
+    self.draw_background = draw_background
     self.border = border
     self.max_size = max_size
     super().__init__(**kwargs)
@@ -44,8 +45,12 @@ class InfluxDBDashboardSingleStatOutput(InfluxDBDashboardBaseOutput):
     border_width = 1
 
     (foreground_color, background_color) = self.cell.to_text_and_background_color(output, value=value)
-
     box = box if box != None else (canvas.size[0] - box_offset[0], canvas.size[1] - box_offset[1])
+
+    if self.draw_background:
+      draw = ImageDraw.Draw(canvas)
+      background_rect = [box_offset[0], box_offset[1], box_offset[0] + box[0], box_offset[1] + box[1]]
+      draw.rectangle(background_rect, fill=background_color)
 
     draw_text_on_canvas(
       canvas, output.font_name, box, text,

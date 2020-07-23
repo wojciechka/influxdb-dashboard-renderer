@@ -43,7 +43,7 @@ class InfluxDBDashboardCellOutput:
       )
     elif self.cell.type == 'single-stat':
       items_to_draw.append(
-        InfluxDBDashboardSingleStatOutput(cell=self, canvas=canvas, output=output)
+        InfluxDBDashboardSingleStatOutput(cell=self, canvas=canvas, output=output, draw_background=True)
       )
     if self.cell.type == 'line-plus-single-stat':
       items_to_draw.append(
