@@ -2,8 +2,10 @@
 
 ## Running using pre-built docker image
 
+The docker image is available on DockerHub as [`wojciechka/influxdb-dashboard-renderer`](https://hub.docker.com/repository/docker/wojciechka/influxdb-dashboard-renderer).
+
 ```bash
-$ docker run -p 5000:5000 docker.io/wojciechka/influxdb-dashboard-renderer
+$ docker run -p 5000:5000 wojciechka/influxdb-dashboard-renderer
 ```
 
 The above will run a pre-built container for running the dashboard renderer web server and expose it on local port 5000.
