@@ -1,5 +1,7 @@
 # wrapper around InfluxDBClient to handle dashboard and cells
 
+from collections import namedtuple
+
 from influxdb_client import InfluxDBClient, CellsService, DashboardsService, Dialect, QueryService, Query, rest
 from influxdb_client.client.flux_csv_parser import FluxCsvParser, FluxSerializationMode
 from influxdb_dashboard.cell import InfluxDBDashboardCellOutput
@@ -211,9 +213,9 @@ class InfluxDBDashboardView:
     self.id = dashboard_id
     self.ds = DashboardsService(self.client.api_client)
     info = self.ds.get_dashboards_id(self.id)
-    self.name = info.name
-    self.description = info.description
-    self.cells_info = info.cells
+    self.name = info.get('name', '')
+    self.description = info.get('description', '')
+    self.cells_info = list(map(lambda cell: namedtuple('cell', cell.keys())(*cell.values()), info['cells']))
     self.init_height()
     self._cells = None
 
